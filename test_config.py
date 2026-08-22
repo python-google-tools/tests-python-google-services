@@ -38,6 +38,18 @@ def test_config_secret_file_none_when_absent(tmp_path):
     assert config.config_secret_file(path) is None
 
 
-def test_bundled_env_toml_has_scopes():
-    # The real config/env.toml ships the canonical default scopes.
+def test_config_token_file(tmp_path):
+    path = _write(tmp_path, '[google]\ntoken_file = "token.json"\n')
+    assert config.config_token_file(path) == "token.json"
+
+
+def test_config_token_file_none_when_absent(tmp_path):
+    path = _write(tmp_path, "[google]\n")
+    assert config.config_token_file(path) is None
+
+
+def test_bundled_default_toml_is_complete():
+    # The shipped config/default.toml carries the canonical defaults.
     assert len(config.config_scopes()) > 0
+    assert config.config_secret_file() == "client_secret.json"
+    assert config.config_token_file() == "token.json"
