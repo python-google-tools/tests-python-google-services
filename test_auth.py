@@ -27,9 +27,18 @@ def test_get_scopes_from_env(monkeypatch):
     assert auth.get_scopes() == ["https://x", "https://y"]
 
 
-def test_get_scopes_falls_back_to_defaults(monkeypatch):
+def test_get_scopes_from_config_toml(tmp_path, monkeypatch):
+    # No explicit arg, no env → read defaults from env.toml.
     monkeypatch.delenv("GOOGLE_SCOPES", raising=False)
-    assert auth.get_scopes() == auth.DEFAULT_SCOPES
+    cfg = tmp_path / "env.toml"
+    cfg.write_text('[google]\nscopes = ["https://c1", "https://c2"]\n')
+    assert auth.get_scopes(config_path=str(cfg)) == ["https://c1", "https://c2"]
+
+
+def test_get_scopes_defaults_when_config_missing(tmp_path, monkeypatch):
+    monkeypatch.delenv("GOOGLE_SCOPES", raising=False)
+    missing = tmp_path / "nope.toml"
+    assert auth.get_scopes(config_path=str(missing)) == auth.DEFAULT_SCOPES
 
 
 # --------------------------------------------------------------------------- #
@@ -49,9 +58,11 @@ def test_service_account_provider_raises_on_missing_file(tmp_path):
         provider()
 
 
-def test_get_scopes_empty_list_falls_back_to_defaults():
-    # An empty/falsy scopes arg is treated as "not provided" → defaults.
-    assert auth.get_scopes([]) == auth.DEFAULT_SCOPES
+def test_get_scopes_empty_list_falls_back_to_defaults(tmp_path, monkeypatch):
+    # An empty/falsy scopes arg is treated as "not provided".
+    monkeypatch.delenv("GOOGLE_SCOPES", raising=False)
+    missing = tmp_path / "nope.toml"
+    assert auth.get_scopes([], config_path=str(missing)) == auth.DEFAULT_SCOPES
 
 
 def test_service_account_provider_builds_credentials(tmp_path):
